@@ -1,0 +1,487 @@
+#include <allegro.h>
+#include<iostream>
+#include<stdlib.h>
+#include<ctime>
+using namespace std;
+#define sq  0
+#define l1  1
+#define l2  2
+#define z1  3
+#define z2  4
+#define te  5
+#define bar 6
+
+
+void check();
+void settle(int);
+void draw();
+void draw2();
+void dsgn();
+void draw_nxt();
+void  dec(int);
+void over();
+void restrt();
+
+int r,g,b;
+int i,j,t,bx=10,bx2=30,cx,cx2;
+int imap[21][10];
+int x0,x1,x2,x3,y0,y1,y2,y3;
+int landed=0;
+int t2,n2,fir; 
+int lev_lines=0,score=0,lev=1,dj=1;
+int game_over=0,new_block=0;
+BITMAP *buffer;
+
+
+
+class ibox
+{
+public: 
+int x,y; 
+void set(int fx,int fy);  
+         
+}testb[4]; //testblocks;
+
+class block
+{
+public:      
+ibox b[4],dum[4];    
+block(){};
+block(int x, int y, int type);
+block(const block &blc);   
+
+int type;      
+void asgn(int x, int y, int type);
+void lt();
+void r8();
+void bt();
+void rotate();
+void destroy();
+void copy();
+int down_vir();
+}b1,bn,bto;
+
+void ibox::set(int fx,int fy)
+{
+this->x = fx; this->y = fy;
+
+}
+
+
+void block::lt()
+{ 
+for(i=0; i<4; i++)
+{  if(b[i].x == 0 || imap[b[i].y][b[i].x-1] >= 0) 
+  { return; } }
+  
+  for(i=0;i<4;i++)
+{imap[bn.b[i].y][bn.b[i].x]=-2;}                     //ACTIVE STATE off
+  
+  x0= b[0].x;  y0=b[0].y;   x1=b[1].x;  y1=b[1].y;
+  x2= b[2].x;  y2=b[2].y;   x3=b[3].x;  y3=b[3].y;
+  b[0].set(x0-1, y0); b[1].set(x1-1, y1); b[2].set(x2-1, y2); b[3].set(x3-1, y3);          
+
+}
+
+void block::r8 ()
+{
+for(i=0; i<4; i++)
+{ if(b[i].x == 9 || imap[b[i].y][b[i].x+1] >= 0)
+   {return; }}
+
+
+  for(i=0;i<4;i++)
+{imap[bn.b[i].y][bn.b[i].x]=-2;}                     //ACTIVE STATE off
+
+x0= b[0].x;  y0=b[0].y;   x1=b[1].x;  y1=b[1].y;
+x2= b[2].x;  y2=b[2].y;   x3=b[3].x;  y3=b[3].y;
+b[0].set(x0+1, y0); b[1].set(x1+1, y1); b[2].set(x2+1, y2); b[3].set(x3+1, y3);     
+
+}
+ 
+void block::bt()
+{
+for(i=0;i<4;i++) {    
+//{if(b[i].y>=19 ||
+ if( (imap[b[i].y+1][b[i].x])>=0)
+{ landed=1;return; }   }
+
+for(i=0;i<4;i++)
+{imap[bn.b[i].y][bn.b[i].x]=-2;}                     //ACTIVE STATE off
+
+x0= b[0].x;  y0=b[0].y;   x1=b[1].x;  y1=b[1].y;
+x2= b[2].x;  y2=b[2].y;   x3=b[3].x;  y3=b[3].y;
+b[0].set(x0, y0+1); b[1].set(x1, y1+1); b[2].set(x2, y2+1); b[3].set(x3, y3+1);          
+
+}
+
+
+ 
+void block::rotate()
+{
+
+for(i=0; i<4; i++)
+{
+testb[i].x = b[i].x; 
+testb[i].y = b[i].y;      
+
+//rotate
+testb[i].x = - (b[i].y - b[0].y) + b[0].x;
+testb[i].y =   (b[i].x - b[0].x) + b[0].y;
+
+if( testb[i].x > 9 || testb[i].x <= 0 || testb[i].y > 19 || testb[i].y <= 0 || imap[testb[i].y][testb[i].x] >= 0) 
+return;
+}
+if(type==0) return;
+
+
+for(i=0;i<4;i++)
+{imap[bn.b[i].y][bn.b[i].x]=-2;}                     //ACTIVE STATE off
+
+for(int in=0; in<4; in++)
+{ b[in].x=testb[in].x; b[in].y=testb[in].y;    }
+//block::bt();  //optional to bring down or not... 
+}
+
+
+
+void block::copy()
+{
+for(int i=0; i<4; i++){
+dum[i].x = b[i].x, dum[i].y = b[i].y;
+}    
+     
+ }
+
+
+void block::asgn(int x,int y,int type)
+{
+switch(type){
+		case sq:{
+			b[0].set(x+1, y+1); b[1].set(x+1, y); b[2].set(x+2, y); b[3].set(x+2, y+1);
+		}break;
+		case l1:{
+			b[0].set(x+1, y); b[1].set(x, y); b[2].set(x+2, y); b[3].set(x, y+1);
+		}break;
+		case l2:{
+			b[0].set(x+1, y); b[1].set(x,y); b[2].set(x+2, y); b[3].set(x+2, y+1);
+		}break;
+		case z1:{
+			b[0].set(x+1, y); b[1].set(x+2, y); b[2].set(x, y+1); b[3].set(x+1, y+1);
+		}break;
+		case z2:{
+			b[0].set(x+1, y); b[1].set(x, y); b[2].set(x+2, y+1); b[3].set(x+1, y+1);
+		}break;
+		case te:{
+			b[0].set(x+1, y); b[1].set(x, y); b[2].set(x+2, y); b[3].set(x+1, y+1);
+		}break;
+		case bar:{
+			b[2].set(x, y); b[1].set(x+1, y); b[0].set(x+2, y); b[3].set(x+3, y);
+		}break;
+	         }
+	         
+	      // for(t=0;t<4;t++)    
+	     //{ imap[b[t].x][b[t].y]=-1;  }
+	         
+  }
+
+              
+void dsgn()
+{
+//clear_to_color( screen, makecol( 0,0,80 ));    
+bx=10;bx2=30;     
+for(i=0;i<20;i++)
+{ cx=230; cx2=250;
+for(j=0;j<10;j++)
+{  rect( screen,cx,bx,cx2,bx2, makecol( 0,0,0));
+cx=cx2;cx2=cx+20;
+}
+bx=bx2;bx2=bx+20;
+}
+}
+
+
+
+void gen()
+{
+char levbuf[10],linbuf[10],scbuf[10];     
+rectfill(screen ,500 ,150 ,620,350, makecol (0,0, 80)); 
+
+sprintf(levbuf,"%d",lev);
+sprintf(linbuf,"%d",lev_lines);
+sprintf(scbuf,"%d",score);
+
+textprintf_ex(screen, font, 460 , 200,makecol(255, 255,255),-1,"LEVEL  %s", levbuf);
+textprintf_ex(screen, font, 460 , 250,makecol(255, 255,255),-1,"LINES  %s", linbuf);
+textprintf_ex(screen, font, 460 , 300,makecol(255, 255,255),-1,"SCORE  %s", scbuf);
+
+
+
+if(fir==1)
+bn=bto; 
+draw();
+
+int rnum = rand() % 7;
+bto.type=rnum;
+bto.asgn(1,0,rnum);
+draw_nxt();
+
+fir=1;
+readkey();
+
+}
+ 
+ void dec(int colr)
+ {
+ if(colr==0)     
+{r=238;g=201;b=0;}
+if(bn.type==1)
+{r=65;;g=105;b=225;}
+if(colr==2)     
+{r=237;g=145;b=33;}
+if(colr==3)     
+{r=255;g=125;b=64;}
+if(colr==4)     
+{r=118;g=238;b=0;}
+if(colr==5)     
+{r=255;g=0;b=255;}
+if(colr==6)     
+{r=135;g=206;b=255;}
+
+}
+void draw()
+{
+     
+dec(bn.type);    
+for(t=0;t<4;t++)
+{rectfill(screen ,210+(bn.b[t].x*20) , 10 +(bn.b[t].y* 20) , 210+(bn.b[t].x*20)+20 , 10+(bn.b[t].y*20)+20 ,makecol( r, g, b));}
+
+}
+
+void draw_nxt()
+{
+dec(bto.type);     
+textout_ex(screen, font,"NEXT", 460,20, makecol(255, 255, 255), -1);   
+rectfill(screen ,450 , 30 ,530,100,makecol( 0,0, 80));  
+for(t=0;t<4;t++)
+{rectfill(screen ,430+(bto.b[t].x*20) , 45 +(bto.b[t].y* 20) , 430+(bto.b[t].x*20)+20 , 45+(bto.b[t].y*20)+20 ,makecol( r, g, b));}    
+}
+
+void core()
+{
+for(i=0;i<20;i++)
+for(j=0;j<10;j++)
+{  
+if(imap[i][j]==-2)
+rectfill(screen ,230+(j*20), 10 +(i* 20) , 230+(j*20)+20 ,10+(i*20)+20 , makecol( 0,0, 0));  
+if(imap[i][j]==1)
+ rectfill(screen ,230+(j*20), 10 +(i* 20) , 230+(j*20)+20 ,10+(i*20)+20 , makecol( 65,105,225));  
+if(imap[i][j]==2)
+ rectfill(screen ,230+(j*20), 10 +(i* 20) , 230+(j*20)+20 ,10+(i*20)+20 , makecol( 237,145,33));  
+if(imap[i][j]==3)
+ rectfill(screen ,230+(j*20), 10 +(i* 20) , 230+(j*20)+20 ,10+(i*20)+20 , makecol( 255,125,64));  
+if(imap[i][j]==4)
+ rectfill(screen ,230+(j*20), 10 +(i* 20) , 230+(j*20)+20 ,10+(i*20)+20 , makecol( 118,238,0));  
+if(imap[i][j]==5)
+ rectfill(screen ,230+(j*20), 10 +(i* 20) , 230+(j*20)+20 ,10+(i*20)+20 , makecol( 255,0,255));  
+if(imap[i][j]==6)
+rectfill(screen ,230+(j*20), 10 +(i* 20) , 230+(j*20)+20 ,10+(i*20)+20 , makecol( 135,206,255));  
+if(imap[i][j]==0)
+ rectfill(screen ,230+(j*20), 10 +(i* 20) , 230+(j*20)+20 ,10+(i*20)+20 , makecol( 238,201,0));  
+
+
+
+}
+bx=10;bx2=30;     
+for(i=0;i<20;i++)
+{ cx=230; cx2=250;
+for(j=0;j<10;j++)
+{ rect( screen,cx,bx,cx2,bx2, makecol( 0,0,0));
+  cx=cx2;cx2=cx+20;}
+  bx=bx2;bx2=bx+20;}
+}
+
+void draw3()
+{
+//dsgn()
+dec(bn.type);
+
+rest(100);     
+for(t=0;t<4;t++)
+{rectfill(screen,230+(bn.b[t].x*20),10 +(bn.b[t].y* 20),230+(bn.b[t].x*20)+20,10+(bn.b[t].y*20)+20 ,makecol( r, g,b));    
+acquire_screen();
+draw_sprite( screen, buffer, 0, 0);
+core();
+release_screen();
+}
+//core();
+}
+
+void check()
+{      
+//new_block=1;
+int count=1,changed=0;
+for(i=19;i>=0;i--)
+{count=1; changed=0;
+
+for(j=9;j>=0;j--)
+{if(imap[i][j]>=0)
+count++;}
+
+if(count==11)
+{ lev_lines++; if(lev_lines >= 2*dj + 1){ lev++; dj++; } 
+
+score=score+lev*10; settle(i); }
+}  
+
+
+
+
+
+}
+
+
+void settle(int line)
+{
+
+for(i=line;i>0;i--)     
+for(j=0;j<10;j++)
+imap[i][j]=imap[i-1][j];
+
+core();   
+}
+
+
+void over()
+{
+int fy=1;char chg='r';     
+for(i=0;i<20;i++)
+{for(j=0;j<10;j++)
+{
+rectfill(screen ,230+(j*20), 10 +(i* 20) , 230+(j*20)+20 ,10+(i*20)+20 , makecol( 0,0,80)); rest(20);
+}
+}
+
+dsgn();
+textout_ex(screen, font,"GAME OVER", 300, 200, makecol(255, 255, 255), -1);   
+textout_ex(screen, font,"ESC to quit.", 450, 440, makecol(255, 255, 255), -1);   
+textout_ex(screen, font,"Enter to restart.", 450, 455, makecol(255, 255, 255), -1);   
+rest(500);
+
+while(!key[KEY_ESC])
+{
+if(key[KEY_ENTER])
+restrt();
+}
+
+exit(-1);
+
+} 
+
+void gme()
+{
+while(!key[KEY_ESC])
+{
+for(i=0;i<4;i++)
+{imap[bn.b[i].y][bn.b[i].x]=-1;}                     //ACTIVE STATE
+
+
+check();              
+
+if(landed==1)
+{
+for(i=0;i<4;i++)
+if(bn.b[i].y==0)  {game_over=1;over();}
+             
+landed=0;
+for(i=0;i<4;i++)
+{imap[bn.b[i].y][bn.b[i].x]=bn.type;}
+gen();
+}
+
+
+if(key[KEY_UP])
+{ core();bn.rotate();for(i=0;i<4;i++)
+{imap[bn.b[i].y][bn.b[i].x]=-1;}                     //ACTIVE STATE
+draw3();}
+
+if(key[KEY_LEFT])
+{ core();bn.lt();
+for(i=0;i<4;i++)
+{imap[bn.b[i].y][bn.b[i].x]=-1;}                     //ACTIVE STATE
+draw3(); }
+
+if(key[KEY_RIGHT])
+{ core();bn.r8();
+
+for(i=0;i<4;i++)
+{imap[bn.b[i].y][bn.b[i].x]=-1;}                     //ACTIVE STATE
+draw3(); }
+     
+if(key[KEY_DOWN])
+{ core();bn.bt();
+for(i=0;i<4;i++)
+{imap[bn.b[i].y][bn.b[i].x]=-1;}                     //ACTIVE STATE
+draw3();}
+
+
+}
+    
+}
+void restrt()
+{
+landed=0;
+lev_lines=0,score=0,lev=1,dj=1;
+game_over=0,new_block=0;
+bx=10,bx2=30;
+     
+clear_to_color( screen, makecol( 0,0,80 ));    
+textout_ex(screen, font,"iTETRIS",3,10, makecol(255, 255, 255), -1);    
+textout_ex(screen, font,"ESC to quit",450,400, makecol(255, 255, 255), -1);    
+textout_ex(screen, font,"all rights reserved.copyright 2012.impressport.impact incorp.",3,470, makecol(255, 255, 255), -1);    
+
+for(i=0;i<20;i++)
+for(j=0;j<10;j++)
+{imap[i][j]=-2;}
+ 
+for(j=0;j<10;j++)
+{imap[20][j]=0;}  
+ 
+fir=0;
+srand(time(0));     
+int n=rand();
+int t=(n%7);     
+bn.type = t;     
+bn.asgn(4,0,t);
+
+dsgn(); 
+gen();
+gme();
+
+}
+
+
+
+
+int main()
+{
+ allegro_init();
+ install_keyboard();
+ install_timer();
+ install_mouse();
+ install_sound( DIGI_AUTODETECT, MIDI_AUTODETECT, 0 );
+ set_gfx_mode( GFX_AUTODETECT, 640,700, 0, 0);
+ set_window_title("iTetris");
+ 
+ acquire_screen();
+ buffer=create_bitmap(640,480);
+ restrt();
+ 
+ release_screen();
+ readkey();
+ 
+ return 0;    
+}END_OF_MAIN();
+
+
+
