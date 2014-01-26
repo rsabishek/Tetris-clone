@@ -15,11 +15,13 @@ Note:
 -Allegro library scores better than opengl for developing side-scrollers.
 
 
+Launched on: 8th April 2012
+
+
 Dev.by:
 Karthick[PercOS Developer]
 Abishek
 
-Launched on:
-8th April 2012.
+
 
 free to reuse/modify.impressport labs.
